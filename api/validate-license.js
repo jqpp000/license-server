@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
         expire_date: license.expire_date,
         max_users: license.max_users,
         status: license.status,
-        features: JSON.parse(license.features || '{}')
+        features: license.features || {}
       }
     });
     
