@@ -340,6 +340,7 @@
                 <h2>📊 系统状态</h2>
                 <button class="btn btn-info" onclick="checkSystemStatus()">检查系统状态</button>
                 <button class="btn btn-success" onclick="initializeDatabase()">初始化数据库</button>
+                <button class="btn btn-warning" onclick="viewRawDatabase()">查看真实数据库</button>
                 <div class="loading" id="statusLoading">
                     <div class="spinner"></div>
                     <p>正在处理...</p>
@@ -984,6 +985,54 @@
                 showResult('manageResult', `❌ 删除失败: ${error.message}`, 'error');
             } finally {
                 hideLoading('manageLoading');
+            }
+        }
+        
+        // 查看真实数据库数据
+        async function viewRawDatabase() {
+            showLoading('statusLoading');
+            hideResult('statusResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/debug-db`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    let resultText = `🗄️ 真实数据库数据查询成功
+
+📊 统计信息:
+   • 总记录数: ${data.stats.total}
+   • 激活状态: ${data.stats.active}
+   • 禁用状态: ${data.stats.disabled}
+   • 删除状态: ${data.stats.deleted}
+   • 过期记录: ${data.stats.expired}
+
+🔍 原始数据详情:`;
+
+                    data.raw_data.forEach((license, index) => {
+                        resultText += `\n\n${index + 1}. 授权码: ${license.license_key}
+   客户: ${license.customer_name}
+   邮箱: ${license.customer_email || '未设置'}
+   状态: ${license.status}
+   过期时间: ${new Date(license.expire_date).toLocaleString('zh-CN')}
+   最大用户数: ${license.max_users}
+   创建时间: ${new Date(license.created_at).toLocaleString('zh-CN')}
+   更新时间: ${license.renewed_at ? new Date(license.renewed_at).toLocaleString('zh-CN') : '无'}
+   禁用时间: ${license.disabled_at ? new Date(license.disabled_at).toLocaleString('zh-CN') : '无'}`;
+                    });
+                    
+                    resultText += `\n\n📋 数据库信息:
+表名: ${data.database_info.table_name}
+查询时间: ${new Date(data.database_info.query_time).toLocaleString('zh-CN')}`;
+                    
+                    showResult('statusResult', resultText, 'info');
+                } else {
+                    showResult('statusResult', `❌ 查询失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('statusResult', `❌ 查询失败: ${error.message}`, 'error');
+            } finally {
+                hideLoading('statusLoading');
             }
         }
         
