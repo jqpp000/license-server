@@ -217,6 +217,86 @@
             display: inline-block;
         }
         
+        /* 搜索控制区域 */
+        .search-controls {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 14px;
+            min-width: 120px;
+        }
+        
+        .filter-select option {
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        /* 分页控制 */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .pagination-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .pagination-buttons span {
+            color: #ffffff;
+            font-size: 14px;
+            margin: 0 10px;
+        }
+        
+        #paginationInfo {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .pagination-controls {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+        
         .loading {
             display: none;
             text-align: center;
@@ -297,7 +377,36 @@
             <!-- 授权码列表 -->
             <div class="section">
                 <h2>📋 授权码列表</h2>
-                <button class="btn btn-info" onclick="loadLicenses()">刷新列表</button>
+                
+                <!-- 搜索和筛选区域 -->
+                <div class="search-controls">
+                    <div class="form-group">
+                        <label>🔍 搜索授权码</label>
+                        <input type="text" id="searchInput" placeholder="输入授权码、客户名称或邮箱进行搜索">
+                    </div>
+                    <div class="filter-controls">
+                        <select id="statusFilter" class="filter-select">
+                            <option value="">全部状态</option>
+                            <option value="active">激活</option>
+                            <option value="disabled">已禁用</option>
+                            <option value="deleted">已删除</option>
+                            <option value="expired">已过期</option>
+                        </select>
+                        <button class="btn btn-info" onclick="loadLicenses()">刷新列表</button>
+                        <button class="btn btn-warning" onclick="clearSearch()">清空搜索</button>
+                    </div>
+                </div>
+                
+                <!-- 分页控制 -->
+                <div class="pagination-controls">
+                    <span id="paginationInfo">显示第 1-10 条，共 0 条</span>
+                    <div class="pagination-buttons">
+                        <button class="btn btn-sm" onclick="previousPage()" id="prevBtn" disabled>上一页</button>
+                        <span id="pageInfo">第 1 页</span>
+                        <button class="btn btn-sm" onclick="nextPage()" id="nextBtn" disabled>下一页</button>
+                    </div>
+                </div>
+                
                 <div class="loading" id="listLoading">
                     <div class="spinner"></div>
                     <p>正在加载授权码...</p>
@@ -365,6 +474,12 @@
 
     <script>
         const API_BASE = window.location.origin;
+        
+        // 分页和搜索状态
+        let allLicenses = [];
+        let filteredLicenses = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
         
         // 工具函数
         function showLoading(id) {
@@ -508,48 +623,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    const listDiv = document.getElementById('licenseList');
-                    
-                    if (data.licenses.length === 0) {
-                        listDiv.innerHTML = '<p>暂无授权码</p>';
-                    } else {
-                        let html = '';
-                        data.licenses.forEach(license => {
-                            const isExpired = license.is_expired;
-                            let statusClass = 'status-active';
-                            let statusText = '正常';
-                            
-                            // 根据实际状态设置显示
-                            if (license.status === 'disabled') {
-                                statusClass = 'status-disabled';
-                                statusText = '已禁用';
-                            } else if (license.status === 'deleted') {
-                                statusClass = 'status-deleted';
-                                statusText = '已删除';
-                            } else if (isExpired) {
-                                statusClass = 'status-expired';
-                                statusText = '已过期';
-                            } else {
-                                statusClass = 'status-active';
-                                statusText = '激活';
-                            }
-                            
-                            html += `
-                                <div class="license-card">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                        <strong>${license.customer_name}</strong>
-                                        <span class="status-badge ${statusClass}">${statusText}</span>
-                                    </div>
-                                    <div class="license-key">${license.license_key}</div>
-                                    <p><strong>邮箱:</strong> ${license.customer_email}</p>
-                                    <p><strong>到期时间:</strong> ${new Date(license.expire_date).toLocaleString('zh-CN')}</p>
-                                    <p><strong>最大用户数:</strong> ${license.max_users}</p>
-                                    <p><strong>创建时间:</strong> ${new Date(license.created_at).toLocaleString('zh-CN')}</p>
-                                </div>
-                            `;
-                        });
-                        listDiv.innerHTML = html;
-                    }
+                    allLicenses = data.licenses || [];
+                    applyFiltersAndSearch();
                 } else {
                     document.getElementById('licenseList').innerHTML = `<p>❌ 加载失败: ${data.error}</p>`;
                 }
@@ -558,6 +633,131 @@
             } finally {
                 hideLoading('listLoading');
             }
+        }
+        
+        // 应用筛选和搜索
+        function applyFiltersAndSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            filteredLicenses = allLicenses.filter(license => {
+                // 搜索筛选
+                const matchesSearch = !searchTerm || 
+                    license.license_key.toLowerCase().includes(searchTerm) ||
+                    license.customer_name.toLowerCase().includes(searchTerm) ||
+                    (license.customer_email && license.customer_email.toLowerCase().includes(searchTerm));
+                
+                // 状态筛选
+                let matchesStatus = true;
+                if (statusFilter) {
+                    if (statusFilter === 'active') {
+                        matchesStatus = license.status === 'active' && !license.is_expired;
+                    } else if (statusFilter === 'expired') {
+                        matchesStatus = license.is_expired;
+                    } else {
+                        matchesStatus = license.status === statusFilter;
+                    }
+                }
+                
+                return matchesSearch && matchesStatus;
+            });
+            
+            currentPage = 1; // 重置到第一页
+            renderLicenses();
+            updatePagination();
+        }
+        
+        // 渲染授权码列表
+        function renderLicenses() {
+            const listDiv = document.getElementById('licenseList');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageLicenses = filteredLicenses.slice(startIndex, endIndex);
+            
+            if (filteredLicenses.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7); padding: 20px;">暂无符合条件的授权码</p>';
+            } else {
+                let html = '';
+                pageLicenses.forEach(license => {
+                    const isExpired = license.is_expired;
+                    let statusClass = 'status-active';
+                    let statusText = '正常';
+                    
+                    // 根据实际状态设置显示
+                    if (license.status === 'disabled') {
+                        statusClass = 'status-disabled';
+                        statusText = '已禁用';
+                    } else if (license.status === 'deleted') {
+                        statusClass = 'status-deleted';
+                        statusText = '已删除';
+                    } else if (isExpired) {
+                        statusClass = 'status-expired';
+                        statusText = '已过期';
+                    } else {
+                        statusClass = 'status-active';
+                        statusText = '激活';
+                    }
+                    
+                    html += `
+                        <div class="license-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong>${license.customer_name}</strong>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </div>
+                            <div class="license-key">${license.license_key}</div>
+                            <p><strong>邮箱:</strong> ${license.customer_email}</p>
+                            <p><strong>到期时间:</strong> ${new Date(license.expire_date).toLocaleString('zh-CN')}</p>
+                            <p><strong>最大用户数:</strong> ${license.max_users}</p>
+                            <p><strong>创建时间:</strong> ${new Date(license.created_at).toLocaleString('zh-CN')}</p>
+                        </div>
+                    `;
+                });
+                listDiv.innerHTML = html;
+            }
+        }
+        
+        // 更新分页信息
+        function updatePagination() {
+            const totalItems = filteredLicenses.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            
+            // 更新分页信息
+            document.getElementById('paginationInfo').textContent = 
+                `显示第 ${startItem}-${endItem} 条，共 ${totalItems} 条`;
+            document.getElementById('pageInfo').textContent = 
+                `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            
+            // 更新按钮状态
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        }
+        
+        // 上一页
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderLicenses();
+                updatePagination();
+            }
+        }
+        
+        // 下一页
+        function nextPage() {
+            const totalPages = Math.ceil(filteredLicenses.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderLicenses();
+                updatePagination();
+            }
+        }
+        
+        // 清空搜索
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            applyFiltersAndSearch();
         }
         
         // 验证授权码
@@ -790,6 +990,10 @@
             const defaultDate = new Date();
             defaultDate.setDate(defaultDate.getDate() + 30);
             document.getElementById('newExpireDate').value = defaultDate.toISOString().split('T')[0];
+            
+            // 添加搜索和筛选事件监听器
+            document.getElementById('searchInput').addEventListener('input', applyFiltersAndSearch);
+            document.getElementById('statusFilter').addEventListener('change', applyFiltersAndSearch);
         };
     </script>
 </body>
