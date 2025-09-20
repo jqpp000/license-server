@@ -4,6 +4,9 @@
   "description": "授权码管理服务器",
   "main": "index.js",
   "type": "commonjs",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'No build step required'",
