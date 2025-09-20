@@ -1,4 +1,4 @@
-const { getAllLicenses } = require('./kv-storage');
+const { getAllLicenses } = require('./simple-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -12,11 +12,11 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    const licenses = await getAllLicenses();
+    const licenses = getAllLicenses();
     
     res.json({
       success: true,
-      message: 'KV数据库调试信息',
+      message: '简化存储调试信息',
       data: {
         totalLicenses: licenses.length,
         licenses: licenses.map(l => ({
@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
     });
     
   } catch (error) {
-    console.error('❌ KV调试API错误:', error);
+    console.error('❌ 简化存储调试API错误:', error);
     res.status(500).json({
       success: false,
       error: error.message

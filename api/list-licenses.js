@@ -1,4 +1,4 @@
-const { getAllLicenses } = require('./kv-storage');
+const { getAllLicenses } = require('./simple-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    const licenses = await getAllLicenses();
+    const licenses = getAllLicenses();
     
     res.json({ 
       success: true, 

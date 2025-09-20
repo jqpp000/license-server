@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { addLicense } = require('./kv-storage');
+const { addLicense } = require('./simple-storage');
 
 // 生成授权码
 function generateLicenseKey() {
@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
     expireDate.setDate(expireDate.getDate() + (expireDays || 365));
     
     // 添加新授权码
-    const newLicense = await addLicense({
+    const newLicense = addLicense({
       license_key: licenseKey,
       customer_name: customerName,
       customer_email: customerEmail || '',
