@@ -252,6 +252,64 @@
             margin-left: 15px;
         }
         
+        .copy-btn {
+            background: rgba(79, 172, 254, 0.2);
+            border: 1px solid rgba(79, 172, 254, 0.5);
+            color: #4facfe;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(79, 172, 254, 0.3);
+            border-color: #4facfe;
+            transform: scale(1.1);
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .license-key-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .copy-btn-large {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            color: white;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .copy-btn-large:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+        }
+        
+        .copy-btn-large:active {
+            transform: translateY(0);
+        }
+        
         .license-key {
             font-family: 'Courier New', monospace;
             background: rgba(255, 255, 255, 0.1);
@@ -376,6 +434,29 @@
                 flex-direction: column;
                 gap: 10px;
                 text-align: center;
+            }
+        }
+        
+        /* 复制提示动画 */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
             }
         }
         
@@ -803,11 +884,19 @@
                                     <span class="toggle-icon" id="icon-${index}">▶</span>
                                     <strong>${license.customer_name}</strong>
                                     <span class="license-key-preview">${license.license_key}</span>
+                                    <button class="copy-btn" onclick="copyLicenseKey('${license.license_key}', event)" title="复制授权码">
+                                        📋
+                                    </button>
                                 </div>
                                 <span class="status-badge ${statusClass}">${statusText}</span>
                             </div>
                             <div class="card-details" id="details-${index}" style="display: none;">
-                                <div class="license-key">${license.license_key}</div>
+                                <div class="license-key-container">
+                                    <div class="license-key">${license.license_key}</div>
+                                    <button class="copy-btn-large" onclick="copyLicenseKey('${license.license_key}', event)" title="复制授权码">
+                                        📋 复制
+                                    </button>
+                                </div>
                                 <div class="detail-row">
                                     <span class="detail-label">邮箱:</span>
                                     <span class="detail-value">${license.customer_email || '未设置'}</span>
@@ -1273,6 +1362,106 @@
                 element.classList.remove('expanded');
                 element.textContent = '▶';
             });
+        }
+        
+        // 复制授权码
+        async function copyLicenseKey(licenseKey, event) {
+            // 阻止事件冒泡，避免触发卡片展开
+            event.stopPropagation();
+            
+            try {
+                // 使用现代浏览器的 Clipboard API
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(licenseKey);
+                    showCopySuccess(licenseKey);
+                } else {
+                    // 降级方案：使用传统的 document.execCommand
+                    const textArea = document.createElement('textarea');
+                    textArea.value = licenseKey;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        showCopySuccess(licenseKey);
+                    } else {
+                        showCopyError();
+                    }
+                }
+            } catch (error) {
+                console.error('复制失败:', error);
+                showCopyError();
+            }
+        }
+        
+        // 显示复制成功提示
+        function showCopySuccess(licenseKey) {
+            // 创建临时提示元素
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                font-size: 14px;
+                font-weight: 600;
+                animation: slideInRight 0.3s ease;
+            `;
+            toast.innerHTML = `✅ 授权码已复制到剪贴板<br><small style="opacity: 0.8;">${licenseKey}</small>`;
+            
+            document.body.appendChild(toast);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 显示复制失败提示
+        function showCopyError() {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                font-size: 14px;
+                font-weight: 600;
+                animation: slideInRight 0.3s ease;
+            `;
+            toast.innerHTML = `❌ 复制失败，请手动选择复制`;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
         }
         
         // 页面加载时自动检查系统状态
