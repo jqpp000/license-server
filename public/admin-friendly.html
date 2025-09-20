@@ -438,8 +438,14 @@
                     <input type="text" id="renewKey" placeholder="请输入授权码">
                 </div>
                 <div class="form-group">
-                    <label>新的到期日期</label>
-                    <input type="date" id="newExpireDate">
+                    <label>新的到期日期时间</label>
+                    <input type="datetime-local" id="newExpireDate">
+                    <div style="margin-top: 10px;">
+                        <button type="button" class="btn btn-sm" onclick="setTestTime(1)">1分钟后过期</button>
+                        <button type="button" class="btn btn-sm" onclick="setTestTime(5)">5分钟后过期</button>
+                        <button type="button" class="btn btn-sm" onclick="setTestTime(30)">30分钟后过期</button>
+                        <button type="button" class="btn btn-sm" onclick="setTestTime(60)">1小时后过期</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>新的最大用户数</label>
@@ -829,7 +835,7 @@
             }
             
             if (!newExpireDate) {
-                showResult('renewResult', '❌ 请选择新的到期日期', 'error');
+                showResult('renewResult', '❌ 请选择新的到期日期时间', 'error');
                 return;
             }
             
@@ -1089,15 +1095,39 @@
             }
         }
         
+        // 设置测试时间
+        function setTestTime(minutes) {
+            const testDate = new Date();
+            testDate.setMinutes(testDate.getMinutes() + minutes);
+            
+            // 格式化为datetime-local需要的格式
+            const year = testDate.getFullYear();
+            const month = String(testDate.getMonth() + 1).padStart(2, '0');
+            const day = String(testDate.getDate()).padStart(2, '0');
+            const hours = String(testDate.getHours()).padStart(2, '0');
+            const minutes = String(testDate.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('newExpireDate').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            
+            // 显示提示信息
+            showResult('renewResult', `⏰ 已设置为${minutes}分钟后过期: ${testDate.toLocaleString('zh-CN')}`, 'info');
+        }
+        
         // 页面加载时自动检查系统状态
         window.onload = function() {
             checkSystemStatus();
             loadLicenses();
             
-            // 设置默认日期为30天后
+            // 设置默认日期时间为30天后
             const defaultDate = new Date();
             defaultDate.setDate(defaultDate.getDate() + 30);
-            document.getElementById('newExpireDate').value = defaultDate.toISOString().split('T')[0];
+            // 格式化为datetime-local需要的格式 (YYYY-MM-DDTHH:MM)
+            const year = defaultDate.getFullYear();
+            const month = String(defaultDate.getMonth() + 1).padStart(2, '0');
+            const day = String(defaultDate.getDate()).padStart(2, '0');
+            const hours = String(defaultDate.getHours()).padStart(2, '0');
+            const minutes = String(defaultDate.getMinutes()).padStart(2, '0');
+            document.getElementById('newExpireDate').value = `${year}-${month}-${day}T${hours}:${minutes}`;
             
             // 添加搜索和筛选事件监听器
             document.getElementById('searchInput').addEventListener('input', applyFiltersAndSearch);
