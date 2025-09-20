@@ -1,10 +1,37 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// 创建数据库连接
-function getDatabase() {
+// 创建数据库连接并初始化
+async function getDatabase() {
   const dbPath = path.join('/tmp', 'licenses.db');
-  return new sqlite3.Database(dbPath);
+  const db = new sqlite3.Database(dbPath);
+  
+  // 确保数据库表存在
+  await new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // 创建授权码表
+      db.run(`
+        CREATE TABLE IF NOT EXISTS licenses (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          license_key TEXT UNIQUE NOT NULL,
+          customer_name TEXT NOT NULL,
+          customer_email TEXT,
+          expire_date TEXT NOT NULL,
+          max_users INTEGER DEFAULT 10,
+          status TEXT DEFAULT 'active',
+          features TEXT DEFAULT '{}',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          renewed_at TEXT,
+          disabled_at TEXT
+        )
+      `, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  });
+  
+  return db;
 }
 
 module.exports = async function handler(req, res) {
@@ -28,7 +55,7 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: '缺少必要参数' });
   }
   
-  const db = getDatabase();
+  const db = await getDatabase();
   
   try {
     // 检查授权码是否存在

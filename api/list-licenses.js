@@ -1,10 +1,45 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// 创建数据库连接
-function getDatabase() {
+// 创建数据库连接并初始化
+async function getDatabase() {
   const dbPath = path.join('/tmp', 'licenses.db');
-  return new sqlite3.Database(dbPath);
+  const db = new sqlite3.Database(dbPath);
+  
+  // 确保数据库表存在
+  await new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // 创建授权码表
+      db.run(`
+        CREATE TABLE IF NOT EXISTS licenses (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          license_key TEXT UNIQUE NOT NULL,
+          customer_name TEXT NOT NULL,
+          customer_email TEXT,
+          expire_date TEXT NOT NULL,
+          max_users INTEGER DEFAULT 10,
+          status TEXT DEFAULT 'active',
+          features TEXT DEFAULT '{}',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          renewed_at TEXT,
+          disabled_at TEXT
+        )
+      `);
+      
+      // 插入示例数据（如果不存在）
+      db.run(`
+        INSERT OR IGNORE INTO licenses 
+        (license_key, customer_name, customer_email, expire_date, max_users, status, features)
+        VALUES 
+        ('ADS-EXAMPLE123456789', '示例客户', 'example@example.com', '2026-12-31T23:59:59.000Z', 10, 'active', '{"ads_management": true, "user_management": true, "reports": true, "api_access": true}')
+      `, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  });
+  
+  return db;
 }
 
 module.exports = async function handler(req, res) {
@@ -22,7 +57,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  const db = getDatabase();
+  const db = await getDatabase();
   
   try {
     // 查询所有授权码
