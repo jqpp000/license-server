@@ -4,12 +4,9 @@ const path = require('path');
 
 module.exports = async function handler(req, res) {
   try {
-    // 创建数据目录
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
+    // 在Vercel环境中，使用/tmp目录来存储数据库文件
+    const dataDir = '/tmp';
+    
     // 创建数据库
     const dbPath = path.join(dataDir, 'licenses.db');
     const db = new sqlite3.Database(dbPath);

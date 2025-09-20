@@ -3,7 +3,7 @@ const path = require('path');
 
 // 创建数据库连接
 function getDatabase() {
-  const dbPath = path.join(process.cwd(), 'data', 'licenses.db');
+  const dbPath = path.join('/tmp', 'licenses.db');
   return new sqlite3.Database(dbPath);
 }
 
