@@ -191,6 +191,16 @@
             color: #721c24;
         }
         
+        .status-disabled {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-deleted {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
         .icon {
             width: 20px;
             height: 20px;
@@ -455,7 +465,10 @@
 📧 客户邮箱: ${data.license.customer_email}
 📅 到期时间: ${new Date(data.license.expire_date).toLocaleString('zh-CN')}
 👥 最大用户数: ${data.license.max_users}
-📊 状态: ${data.license.status}`;
+📊 状态: ${data.license.status === 'active' ? '激活' : 
+                  data.license.status === 'disabled' ? '已禁用' : 
+                  data.license.status === 'deleted' ? '已删除' : 
+                  data.license.status === 'expired' ? '已过期' : data.license.status}`;
                     
                     showResult('addResult', result, 'success');
                     
@@ -492,8 +505,23 @@
                         let html = '';
                         data.licenses.forEach(license => {
                             const isExpired = license.is_expired;
-                            const statusClass = isExpired ? 'status-expired' : 'status-active';
-                            const statusText = isExpired ? '已过期' : '正常';
+                            let statusClass = 'status-active';
+                            let statusText = '正常';
+                            
+                            // 根据实际状态设置显示
+                            if (license.status === 'disabled') {
+                                statusClass = 'status-disabled';
+                                statusText = '已禁用';
+                            } else if (license.status === 'deleted') {
+                                statusClass = 'status-deleted';
+                                statusText = '已删除';
+                            } else if (isExpired) {
+                                statusClass = 'status-expired';
+                                statusText = '已过期';
+                            } else {
+                                statusClass = 'status-active';
+                                statusText = '激活';
+                            }
                             
                             html += `
                                 <div class="license-card">
@@ -553,7 +581,10 @@
 📧 客户邮箱: ${data.license.customer_email}
 📅 到期时间: ${new Date(data.license.expire_date).toLocaleString('zh-CN')}
 👥 最大用户数: ${data.license.max_users}
-📊 状态: ${data.license.status}
+📊 状态: ${data.license.status === 'active' ? '激活' : 
+                  data.license.status === 'disabled' ? '已禁用' : 
+                  data.license.status === 'deleted' ? '已删除' : 
+                  data.license.status === 'expired' ? '已过期' : data.license.status}
 🎯 可用功能: ${Object.keys(data.license.features).filter(k => data.license.features[k]).join(', ')}`;
                     
                     showResult('validateResult', result, 'success');
@@ -609,7 +640,10 @@
 👤 客户名称: ${data.license.customer_name}
 📅 新到期时间: ${new Date(data.license.expire_date).toLocaleString('zh-CN')}
 👥 新最大用户数: ${data.license.max_users}
-📊 状态: ${data.license.status}`;
+📊 状态: ${data.license.status === 'active' ? '激活' : 
+                  data.license.status === 'disabled' ? '已禁用' : 
+                  data.license.status === 'deleted' ? '已删除' : 
+                  data.license.status === 'expired' ? '已过期' : data.license.status}`;
                     
                     showResult('renewResult', result, 'success');
                     
@@ -657,7 +691,10 @@
 📋 禁用信息：
 🔑 授权码: ${data.license.license_key}
 👤 客户名称: ${data.license.customer_name}
-📊 状态: ${data.license.status}
+📊 状态: ${data.license.status === 'active' ? '激活' : 
+                  data.license.status === 'disabled' ? '已禁用' : 
+                  data.license.status === 'deleted' ? '已删除' : 
+                  data.license.status === 'expired' ? '已过期' : data.license.status}
 ⏰ 禁用时间: ${new Date(data.license.disabled_at).toLocaleString('zh-CN')}`;
                     
                     showResult('manageResult', result, 'success');
@@ -710,7 +747,10 @@
 📋 删除信息：
 🔑 授权码: ${data.license.license_key}
 👤 客户名称: ${data.license.customer_name}
-📊 状态: ${data.license.status}
+📊 状态: ${data.license.status === 'active' ? '激活' : 
+                  data.license.status === 'disabled' ? '已禁用' : 
+                  data.license.status === 'deleted' ? '已删除' : 
+                  data.license.status === 'expired' ? '已过期' : data.license.status}
 ⏰ 删除时间: ${new Date(data.license.disabled_at).toLocaleString('zh-CN')}`;
                     
                     showResult('manageResult', result, 'success');
