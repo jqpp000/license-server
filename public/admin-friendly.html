@@ -776,7 +776,7 @@
                 listDiv.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7); padding: 20px;">暂无符合条件的授权码</p>';
             } else {
                 let html = '';
-                pageLicenses.forEach(license => {
+                pageLicenses.forEach((license, index) => {
                     const isExpired = license.is_expired;
                     let statusClass = 'status-active';
                     let statusText = '正常';
