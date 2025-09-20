@@ -1,4 +1,4 @@
-const { findLicenseByKey } = require('./simple-storage');
+const { findLicenseByKey } = require('./memory-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头

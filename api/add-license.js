@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { addLicense } = require('./simple-storage');
+const { addLicense } = require('./memory-storage');
 
 // 生成授权码
 function generateLicenseKey() {

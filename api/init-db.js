@@ -1,4 +1,4 @@
-const { initializeStorage } = require('./simple-storage');
+const { initializeStorage } = require('./memory-storage');
 
 module.exports = async function handler(req, res) {
   try {
