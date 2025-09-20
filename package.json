@@ -13,6 +13,7 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
     "@vercel/kv": "^3.0.0",
     "sqlite3": "^5.1.6"
   },

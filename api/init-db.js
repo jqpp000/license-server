@@ -1,9 +1,9 @@
-const { initializeStorage } = require('./memory-storage');
+const { initializeStorage } = require('./supabase-storage');
 
 module.exports = async function handler(req, res) {
   try {
     // 初始化简化存储
-    const success = initializeStorage();
+    const success = await initializeStorage();
     
     if (success) {
       console.log('✅ 简化存储初始化完成');

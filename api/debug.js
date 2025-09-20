@@ -1,4 +1,4 @@
-const { getAllLicenses } = require('./memory-storage');
+const { getAllLicenses } = require('./supabase-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    const licenses = getAllLicenses();
+    const licenses = await getAllLicenses();
     
     res.json({
       success: true,
