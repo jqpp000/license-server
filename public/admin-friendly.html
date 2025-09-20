@@ -462,7 +462,8 @@
                 </div>
                 <div class="form-group">
                     <button class="btn btn-warning" onclick="disableLicense()">禁用授权码</button>
-                    <button class="btn btn-danger" onclick="deleteLicense()">删除授权码</button>
+                    <button class="btn btn-danger" onclick="deleteLicense()">永久删除</button>
+                    <button class="btn btn-success" onclick="enableLicense()">恢复授权码</button>
                 </div>
                 <div class="loading" id="manageLoading">
                     <div class="spinner"></div>
@@ -1033,6 +1034,58 @@
                 showResult('statusResult', `❌ 查询失败: ${error.message}`, 'error');
             } finally {
                 hideLoading('statusLoading');
+            }
+        }
+        
+        // 恢复授权码
+        async function enableLicense() {
+            const licenseKey = document.getElementById('manageLicenseKey').value.trim();
+            
+            if (!licenseKey) {
+                showResult('manageResult', '❌ 请输入授权码', 'error');
+                return;
+            }
+            
+            showLoading('manageLoading');
+            hideResult('manageResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/disable-license`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        license_key: licenseKey,
+                        action: 'enable'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult('manageResult', 
+                        `✅ 授权码恢复成功！
+                        
+📋 授权码信息：
+🔑 授权码: ${data.license.license_key}
+👤 客户名称: ${data.license.customer_name}
+📊 状态: ${data.license.status === 'active' ? '激活' : data.license.status}`, 
+                        'success'
+                    );
+                    
+                    // 清空输入框
+                    document.getElementById('manageLicenseKey').value = '';
+                    
+                    // 自动刷新列表
+                    setTimeout(loadLicenses, 1000);
+                } else {
+                    showResult('manageResult', `❌ 恢复失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('manageResult', `❌ 恢复失败: ${error.message}`, 'error');
+            } finally {
+                hideLoading('manageLoading');
             }
         }
         

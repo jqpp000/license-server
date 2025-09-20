@@ -1,5 +1,11 @@
 // 禁用/删除授权码API
 const { findLicenseByKey, updateLicense } = require('./supabase-storage');
+const { createClient } = require('@supabase/supabase-js');
+
+// Supabase配置
+const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -26,14 +32,14 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    if (!action || !['disable', 'delete'].includes(action)) {
+    if (!action || !['disable', 'delete', 'enable'].includes(action)) {
       return res.status(400).json({
         success: false,
-        error: '操作类型无效，支持的操作：disable（禁用）或 delete（删除）'
+        error: '操作类型无效，支持的操作：disable（禁用）、delete（删除）或 enable（恢复）'
       });
     }
 
-    console.log(`🔄 开始${action === 'disable' ? '禁用' : '删除'}授权码:`, license_key);
+    console.log(`🔄 开始${action === 'disable' ? '禁用' : action === 'delete' ? '删除' : '恢复'}授权码:`, license_key);
 
     // 查找授权码
     const existingLicense = await findLicenseByKey(license_key);
@@ -46,7 +52,7 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'disable') {
-      // 禁用授权码
+      // 禁用授权码 - 可以恢复
       const updatedLicense = await updateLicense(license_key, {
         status: 'disabled',
         disabled_at: new Date().toISOString()
@@ -56,7 +62,7 @@ module.exports = async function handler(req, res) {
         console.log('✅ 授权码禁用成功:', license_key);
         res.status(200).json({
           success: true,
-          message: '授权码已成功禁用',
+          message: '授权码已成功禁用（可恢复）',
           license: {
             license_key: updatedLicense.license_key,
             customer_name: updatedLicense.customer_name,
@@ -68,26 +74,52 @@ module.exports = async function handler(req, res) {
         throw new Error('禁用授权码失败');
       }
     } else if (action === 'delete') {
-      // 删除授权码 - 这里我们实际上是标记为已删除，而不是真正删除
-      const updatedLicense = await updateLicense(license_key, {
-        status: 'deleted',
-        disabled_at: new Date().toISOString()
-      });
+      // 删除授权码 - 永久删除，不可恢复
+      const { data, error } = await supabase
+        .from('licenses')
+        .delete()
+        .eq('license_key', license_key)
+        .select();
 
-      if (updatedLicense) {
-        console.log('✅ 授权码删除成功:', license_key);
+      if (error) {
+        console.error('❌ 删除授权码失败:', error);
+        throw new Error('删除授权码失败');
+      }
+
+      if (data && data.length > 0) {
+        console.log('✅ 授权码永久删除成功:', license_key);
         res.status(200).json({
           success: true,
-          message: '授权码已成功删除',
+          message: '授权码已永久删除（不可恢复）',
           license: {
-            license_key: updatedLicense.license_key,
-            customer_name: updatedLicense.customer_name,
-            status: updatedLicense.status,
-            disabled_at: updatedLicense.disabled_at
+            license_key: data[0].license_key,
+            customer_name: data[0].customer_name,
+            status: 'deleted'
           }
         });
       } else {
-        throw new Error('删除授权码失败');
+        throw new Error('授权码不存在');
+      }
+    } else if (action === 'enable') {
+      // 恢复授权码 - 将状态改回active
+      const updatedLicense = await updateLicense(license_key, {
+        status: 'active',
+        disabled_at: null
+      });
+
+      if (updatedLicense) {
+        console.log('✅ 授权码恢复成功:', license_key);
+        res.status(200).json({
+          success: true,
+          message: '授权码已成功恢复',
+          license: {
+            license_key: updatedLicense.license_key,
+            customer_name: updatedLicense.customer_name,
+            status: updatedLicense.status
+          }
+        });
+      } else {
+        throw new Error('恢复授权码失败');
       }
     }
 
