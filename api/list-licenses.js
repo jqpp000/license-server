@@ -16,12 +16,30 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    const licenses = await getAllLicenses();
+    const allLicenses = await getAllLicenses();
+    
+    // 分别统计不同状态的授权码
+    const activeLicenses = allLicenses.filter(license => 
+      license.status === 'active' && !license.is_expired
+    );
+    const disabledLicenses = allLicenses.filter(license => 
+      license.status === 'disabled'
+    );
+    const deletedLicenses = allLicenses.filter(license => 
+      license.status === 'deleted'
+    );
+    const expiredLicenses = allLicenses.filter(license => 
+      license.is_expired
+    );
     
     res.json({ 
       success: true, 
-      licenses: licenses,
-      total: licenses.length
+      licenses: allLicenses,
+      total: allLicenses.length,
+      active: activeLicenses.length,
+      disabled: disabledLicenses.length,
+      deleted: deletedLicenses.length,
+      expired: expiredLicenses.length
     });
     
   } catch (error) {

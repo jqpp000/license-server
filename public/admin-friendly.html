@@ -511,10 +511,16 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showResult('statusResult', 
-                        `✅ 系统运行正常\n📊 当前授权码数量: ${data.total}\n🔑 示例授权码: ADS-EXAMPLE123456789`, 
-                        'success'
-                    );
+                    const statusText = `✅ 系统运行正常
+📊 授权码统计:
+   • 激活: ${data.active} 个
+   • 已禁用: ${data.disabled} 个  
+   • 已删除: ${data.deleted} 个
+   • 已过期: ${data.expired} 个
+   • 总计: ${data.total} 个
+🔑 示例授权码: ADS-EXAMPLE123456789`;
+                    
+                    showResult('statusResult', statusText, 'success');
                 } else {
                     showResult('statusResult', `❌ 系统异常: ${data.error}`, 'error');
                 }
