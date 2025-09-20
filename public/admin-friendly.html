@@ -1105,9 +1105,9 @@
             const month = String(testDate.getMonth() + 1).padStart(2, '0');
             const day = String(testDate.getDate()).padStart(2, '0');
             const hours = String(testDate.getHours()).padStart(2, '0');
-            const minutes = String(testDate.getMinutes()).padStart(2, '0');
+            const mins = String(testDate.getMinutes()).padStart(2, '0');
             
-            document.getElementById('newExpireDate').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            document.getElementById('newExpireDate').value = `${year}-${month}-${day}T${hours}:${mins}`;
             
             // 显示提示信息
             showResult('renewResult', `⏰ 已设置为${minutes}分钟后过期: ${testDate.toLocaleString('zh-CN')}`, 'info');
