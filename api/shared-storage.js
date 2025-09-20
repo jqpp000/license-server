@@ -1,13 +1,17 @@
-// 共享内存存储 - 用于Vercel Serverless环境
-// 注意：这只在单个函数实例的生命周期内有效
+// 共享存储 - 使用文件系统持久化数据
+const fs = require('fs');
+const path = require('path');
 
-let licensesData = null;
-let isInitialized = false;
+const DATA_FILE = '/tmp/licenses.json';
 
 // 初始化数据存储
 function initializeStorage() {
-  if (!isInitialized) {
-    licensesData = [
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      return;
+    }
+    
+    const initialData = [
       {
         id: 1,
         license_key: 'ADS-EXAMPLE123456789',
@@ -22,14 +26,40 @@ function initializeStorage() {
         disabled_at: null
       }
     ];
-    isInitialized = true;
+    
+    fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
+  } catch (error) {
+    console.error('初始化存储失败:', error);
   }
-  return licensesData;
+}
+
+// 读取数据
+function readData() {
+  try {
+    initializeStorage();
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+    return [];
+  } catch (error) {
+    console.error('读取数据失败:', error);
+    return [];
+  }
+}
+
+// 写入数据
+function writeData(data) {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('写入数据失败:', error);
+  }
 }
 
 // 获取所有授权码
 function getAllLicenses() {
-  initializeStorage();
+  const licensesData = readData();
   return licensesData.map(license => ({
     ...license,
     features: JSON.parse(license.features || '{}'),
@@ -39,14 +69,14 @@ function getAllLicenses() {
 
 // 根据授权码查找
 function findLicenseByKey(licenseKey) {
-  initializeStorage();
+  const licensesData = readData();
   return licensesData.find(license => license.license_key === licenseKey);
 }
 
 // 添加新授权码
 function addLicense(licenseData) {
-  initializeStorage();
-  const newId = Math.max(...licensesData.map(l => l.id)) + 1;
+  const licensesData = readData();
+  const newId = licensesData.length > 0 ? Math.max(...licensesData.map(l => l.id)) + 1 : 1;
   const newLicense = {
     id: newId,
     ...licenseData,
@@ -55,13 +85,15 @@ function addLicense(licenseData) {
     renewed_at: null,
     disabled_at: null
   };
+  
   licensesData.push(newLicense);
+  writeData(licensesData);
   return newLicense;
 }
 
 // 更新授权码
 function updateLicense(licenseKey, updateData) {
-  initializeStorage();
+  const licensesData = readData();
   const index = licensesData.findIndex(license => license.license_key === licenseKey);
   if (index !== -1) {
     licensesData[index] = {
@@ -69,6 +101,7 @@ function updateLicense(licenseKey, updateData) {
       ...updateData,
       renewed_at: new Date().toISOString()
     };
+    writeData(licensesData);
     return licensesData[index];
   }
   return null;
