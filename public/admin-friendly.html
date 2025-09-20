@@ -12,18 +12,21 @@
         }
         
         body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
             min-height: 100vh;
             padding: 20px;
+            color: #ffffff;
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
             overflow: hidden;
         }
         
@@ -318,6 +321,24 @@
                 </div>
                 <div id="renewResult" class="result" style="display: none;"></div>
             </div>
+            
+            <!-- 授权码管理 -->
+            <div class="section">
+                <h2>⚙️ 授权码管理</h2>
+                <div class="form-group">
+                    <label>授权码</label>
+                    <input type="text" id="manageLicenseKey" placeholder="请输入要管理的授权码">
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-warning" onclick="disableLicense()">禁用授权码</button>
+                    <button class="btn btn-danger" onclick="deleteLicense()">删除授权码</button>
+                </div>
+                <div class="loading" id="manageLoading">
+                    <div class="spinner"></div>
+                    <p>正在处理...</p>
+                </div>
+                <div id="manageResult" class="result" style="display: none;"></div>
+            </div>
         </div>
     </div>
 
@@ -601,6 +622,111 @@
                 showResult('renewResult', `❌ 续费失败: ${error.message}`, 'error');
             } finally {
                 hideLoading('renewLoading');
+            }
+        }
+        
+        // 禁用授权码
+        async function disableLicense() {
+            const licenseKey = document.getElementById('manageLicenseKey').value.trim();
+            
+            if (!licenseKey) {
+                showResult('manageResult', '❌ 请输入授权码', 'error');
+                return;
+            }
+            
+            showLoading('manageLoading');
+            hideResult('manageResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/disable-license`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        license_key: licenseKey,
+                        action: 'disable'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const result = `✅ 授权码禁用成功！
+
+📋 禁用信息：
+🔑 授权码: ${data.license.license_key}
+👤 客户名称: ${data.license.customer_name}
+📊 状态: ${data.license.status}
+⏰ 禁用时间: ${new Date(data.license.disabled_at).toLocaleString('zh-CN')}`;
+                    
+                    showResult('manageResult', result, 'success');
+                    
+                    // 自动加载列表
+                    setTimeout(loadLicenses, 1000);
+                } else {
+                    showResult('manageResult', `❌ 禁用失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('manageResult', `❌ 禁用失败: ${error.message}`, 'error');
+            } finally {
+                hideLoading('manageLoading');
+            }
+        }
+        
+        // 删除授权码
+        async function deleteLicense() {
+            const licenseKey = document.getElementById('manageLicenseKey').value.trim();
+            
+            if (!licenseKey) {
+                showResult('manageResult', '❌ 请输入授权码', 'error');
+                return;
+            }
+            
+            if (!confirm(`⚠️ 确定要删除授权码 "${licenseKey}" 吗？\n\n此操作不可撤销！`)) {
+                return;
+            }
+            
+            showLoading('manageLoading');
+            hideResult('manageResult');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/disable-license`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        license_key: licenseKey,
+                        action: 'delete'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const result = `✅ 授权码删除成功！
+
+📋 删除信息：
+🔑 授权码: ${data.license.license_key}
+👤 客户名称: ${data.license.customer_name}
+📊 状态: ${data.license.status}
+⏰ 删除时间: ${new Date(data.license.disabled_at).toLocaleString('zh-CN')}`;
+                    
+                    showResult('manageResult', result, 'success');
+                    
+                    // 清空输入框
+                    document.getElementById('manageLicenseKey').value = '';
+                    
+                    // 自动加载列表
+                    setTimeout(loadLicenses, 1000);
+                } else {
+                    showResult('manageResult', `❌ 删除失败: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showResult('manageResult', `❌ 删除失败: ${error.message}`, 'error');
+            } finally {
+                hideLoading('manageLoading');
             }
         }
         
