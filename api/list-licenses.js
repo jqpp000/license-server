@@ -1,4 +1,4 @@
-const { getAllLicenses } = require('./shared-storage');
+const { getAllLicenses } = require('./kv-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    const licenses = getAllLicenses();
+    const licenses = await getAllLicenses();
     
     res.json({ 
       success: true, 
@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
     });
     
   } catch (error) {
-    console.error('获取授权码列表错误:', error);
+    console.error('❌ 获取授权码列表错误:', error);
     res.status(500).json({ error: '服务器内部错误' });
   }
 };

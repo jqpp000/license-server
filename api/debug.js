@@ -1,4 +1,4 @@
-const { getData } = require('./shared-storage');
+const { getAllLicenses } = require('./kv-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -12,24 +12,26 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    const data = getData();
+    const licenses = await getAllLicenses();
     
     res.json({
       success: true,
-      message: '调试信息',
+      message: 'KV数据库调试信息',
       data: {
-        totalLicenses: data.length,
-        licenses: data.map(l => ({
+        totalLicenses: licenses.length,
+        licenses: licenses.map(l => ({
           id: l.id,
           license_key: l.license_key,
           customer_name: l.customer_name,
-          status: l.status
+          status: l.status,
+          expire_date: l.expire_date,
+          is_expired: l.is_expired
         }))
       }
     });
     
   } catch (error) {
-    console.error('调试API错误:', error);
+    console.error('❌ KV调试API错误:', error);
     res.status(500).json({
       success: false,
       error: error.message

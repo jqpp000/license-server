@@ -1,4 +1,4 @@
-const { findLicenseByKey } = require('./shared-storage');
+const { findLicenseByKey } = require('./kv-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
   
   try {
     // 查找授权码
-    const license = findLicenseByKey(licenseKey);
+    const license = await findLicenseByKey(licenseKey);
     
     if (!license) {
       return res.json({ 

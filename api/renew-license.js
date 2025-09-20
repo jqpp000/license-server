@@ -1,4 +1,4 @@
-const { findLicenseByKey, updateLicense } = require('./shared-storage');
+const { findLicenseByKey, updateLicense } = require('./kv-storage');
 
 module.exports = async function handler(req, res) {
   // 设置CORS头
@@ -23,14 +23,14 @@ module.exports = async function handler(req, res) {
   
   try {
     // 检查授权码是否存在
-    const existingLicense = findLicenseByKey(licenseKey);
+    const existingLicense = await findLicenseByKey(licenseKey);
     
     if (!existingLicense) {
       return res.status(404).json({ error: '授权码不存在' });
     }
     
     // 更新授权码
-    const updatedLicense = updateLicense(licenseKey, {
+    const updatedLicense = await updateLicense(licenseKey, {
       expire_date: newExpireDate,
       max_users: newMaxUsers || existingLicense.max_users,
       status: 'active'
