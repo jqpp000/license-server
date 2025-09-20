@@ -46,11 +46,11 @@ db.serialize(() => {
 
 db.close();
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.status(200).json({ 
     success: true, 
     message: '数据库初始化完成',
     license_key: 'ADS-EXAMPLE123456789'
   });
-}
+};
 

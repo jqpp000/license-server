@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "授权码管理服务器",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'No build step required'",
