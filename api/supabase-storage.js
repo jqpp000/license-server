@@ -15,6 +15,8 @@ const TABLE_NAME = 'licenses';
 async function initializeStorage() {
   try {
     console.log('🔄 初始化Supabase数据库...');
+    console.log('ℹ️ Supabase URL:', process.env.SUPABASE_URL ? '已配置' : '未配置');
+    console.log('ℹ️ Supabase Key:', process.env.SUPABASE_ANON_KEY ? '已配置' : '未配置');
     
     // 检查表是否存在，如果不存在则创建
     const { data, error } = await supabase
@@ -24,27 +26,20 @@ async function initializeStorage() {
     
     if (error && error.code === 'PGRST116') {
       // 表不存在，需要创建
-      console.log('📋 创建licenses表...');
-      
-      // 在实际部署时，你需要手动在Supabase控制台创建表
-      // 或者使用SQL命令创建表
+      console.log('📋 licenses表不存在，需要手动创建');
       console.log('⚠️  请在Supabase控制台手动创建licenses表');
-      console.log(`
-CREATE TABLE licenses (
-  id SERIAL PRIMARY KEY,
-  license_key VARCHAR(50) UNIQUE NOT NULL,
-  customer_name VARCHAR(100) NOT NULL,
-  customer_email VARCHAR(100),
-  expire_date TIMESTAMP WITH TIME ZONE NOT NULL,
-  max_users INTEGER DEFAULT 10,
-  status VARCHAR(20) DEFAULT 'active',
-  features JSONB DEFAULT '{}',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  renewed_at TIMESTAMP WITH TIME ZONE,
-  disabled_at TIMESTAMP WITH TIME ZONE
-);
-      `);
+      
+      // 即使表不存在，我们也返回true，因为用户需要手动创建表
+      console.log('✅ Supabase数据库初始化完成（表需要手动创建）');
+      return true;
     }
+    
+    if (error) {
+      console.error('❌ 查询数据库失败:', error);
+      throw new Error(`查询数据库失败: ${error.message}`);
+    }
+    
+    console.log('✅ licenses表已存在');
     
     // 检查是否有示例数据
     const { data: existingData, error: selectError } = await supabase
@@ -53,8 +48,8 @@ CREATE TABLE licenses (
       .eq('license_key', 'ADS-EXAMPLE123456789');
     
     if (selectError) {
-      console.error('❌ 查询数据库失败:', selectError);
-      return false;
+      console.error('❌ 查询示例数据失败:', selectError);
+      throw new Error(`查询示例数据失败: ${selectError.message}`);
     }
     
     // 如果没有示例数据，则插入
@@ -81,17 +76,19 @@ CREATE TABLE licenses (
       
       if (insertError) {
         console.error('❌ 插入示例数据失败:', insertError);
-        return false;
+        throw new Error(`插入示例数据失败: ${insertError.message}`);
       }
       
       console.log('✅ 示例数据插入成功');
+    } else {
+      console.log('✅ 示例数据已存在');
     }
     
     console.log('✅ Supabase数据库初始化完成');
     return true;
   } catch (error) {
     console.error('❌ Supabase初始化失败:', error);
-    return false;
+    throw new Error(`Supabase初始化失败: ${error.message}`);
   }
 }
 
