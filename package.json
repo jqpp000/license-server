@@ -2,14 +2,14 @@
   "name": "license-server",
   "version": "2.0.0",
   "description": "增强安全版授权码管理服务器",
-  "main": "server.js",
+  "main": "api/index.js",
   "type": "commonjs",
   "engines": {
     "node": ">=16.0.0"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node api/index.js",
+    "dev": "node api/index.js",
     "build": "echo 'No build step required'",
     "install-deps": "npm install --production"
   },
