@@ -871,9 +871,12 @@
         let authToken = localStorage.getItem('authToken');
         let currentUser = null;
         let licenses = []; // 全局授权码列表
+        let systemStartTime = null; // 系统启动时间
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
+            // 设置系统启动时间（页面加载时间）
+            systemStartTime = new Date();
             checkAuth();
         });
 
@@ -994,6 +997,41 @@
             });
         }
 
+        // 计算系统运行时间
+        function calculateUptime() {
+            if (!systemStartTime) {
+                return '计算中...';
+            }
+            
+            const now = new Date();
+            const diffMs = now - systemStartTime;
+            
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+            
+            if (days > 0) {
+                return `${days}天${hours}小时`;
+            } else if (hours > 0) {
+                return `${hours}小时${minutes}分钟`;
+            } else if (minutes > 0) {
+                return `${minutes}分钟${seconds}秒`;
+            } else {
+                return `${seconds}秒`;
+            }
+        }
+
+        // 更新系统运行时间（每秒更新）
+        function startUptimeTimer() {
+            setInterval(() => {
+                const uptimeElement = document.getElementById('systemUptime');
+                if (uptimeElement) {
+                    uptimeElement.textContent = calculateUptime();
+                }
+            }, 1000);
+        }
+
         // 加载统计数据
         async function loadStats() {
             try {
@@ -1014,8 +1052,11 @@
                     document.getElementById('totalLicenses').textContent = total;
                     document.getElementById('activeLicenses').textContent = active;
                     document.getElementById('expiredLicenses').textContent = expired;
-                    document.getElementById('systemUptime').textContent = '90天';
+                    document.getElementById('systemUptime').textContent = calculateUptime();
                     document.getElementById('lastUpdate').textContent = new Date().toLocaleString('zh-CN');
+                    
+                    // 启动运行时间计时器
+                    startUptimeTimer();
                 } else {
                     throw new Error('获取统计数据失败');
                 }
