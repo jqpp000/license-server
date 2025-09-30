@@ -620,38 +620,77 @@
 
         // 续费授权码
         async function renewLicense(licenseKey) {
-            const days = prompt('请输入续费天数:', '365');
-            if (days && !isNaN(days)) {
-                const additionalDays = parseInt(days);
+            const days = prompt('请输入续费天数 (最长3650天/10年):', '365');
+            if (!days) return;
 
-                // 计算新的过期时间
-                const newExpireDate = new Date();
-                newExpireDate.setDate(newExpireDate.getDate() + additionalDays);
+            const additionalDays = parseInt(days);
 
-                try {
-                    const response = await fetch('/api/renew-license', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            licenseKey: licenseKey,
-                            newExpireDate: newExpireDate.toISOString()
-                        })
-                    });
+            // 验证输入
+            if (isNaN(additionalDays) || additionalDays <= 0) {
+                showError('请输入有效的天数（正整数）');
+                return;
+            }
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        showSuccess(`授权码续费成功！\n授权码: ${licenseKey}\n新过期时间: ${newExpireDate.toLocaleDateString()}`);
-                        await loadDashboardData();
-                    } else {
-                        const error = await response.json();
-                        throw new Error(error.error || '续费失败');
-                    }
-                } catch (error) {
-                    showError('续费授权码失败: ' + error.message);
+            // 限制最长续费时间为10年
+            if (additionalDays > 3650) {
+                showError('续费天数不能超过3650天（10年）');
+                return;
+            }
+
+            // 找到当前授权码的过期时间
+            const currentLicense = licenses.find(license => license.license_key === licenseKey);
+            if (!currentLicense) {
+                showError('未找到授权码信息');
+                return;
+            }
+
+            // 计算新的过期时间
+            const currentExpireDate = new Date(currentLicense.expire_date);
+            const today = new Date();
+            
+            // 如果原过期时间大于今天，从原过期时间开始续费；否则从今天开始续费
+            const baseDate = currentExpireDate > today ? currentExpireDate : today;
+            const newExpireDate = new Date(baseDate);
+            newExpireDate.setDate(newExpireDate.getDate() + additionalDays);
+
+            // 显示确认对话框
+            const baseDateStr = currentExpireDate > today ? '原过期时间' : '今天';
+            const confirmMsg = `确认续费信息：\n\n` +
+                `授权码: ${licenseKey}\n` +
+                `当前过期时间: ${currentExpireDate.toLocaleString('zh-CN')}\n` +
+                `续费天数: ${additionalDays}天\n` +
+                `新过期时间: ${newExpireDate.toLocaleString('zh-CN')}\n` +
+                `计算基准: ${baseDateStr}\n\n` +
+                `是否确认续费？`;
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/renew-license', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        licenseKey: licenseKey,
+                        newExpireDate: newExpireDate.toISOString()
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(`✅ 授权码续费成功！\n授权码: ${licenseKey}\n新过期时间: ${newExpireDate.toLocaleDateString('zh-CN')}`);
+                    // 强制刷新数据
+                    await loadDashboardData();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || '续费失败');
                 }
+            } catch (error) {
+                showError('❌ 续费授权码失败: ' + error.message);
             }
         }
 

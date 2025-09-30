@@ -123,7 +123,7 @@ async function updateLicense(licenseKey, updateData) {
       return null;
     }
     
-    console.log('✅ 授权码更新成功');
+    console.log('✅ 授权码更新成功:', data);
     return data;
   } catch (error) {
     console.error('❌ 更新授权码失败:', error);
@@ -385,6 +385,8 @@ app.post('/api/renew-license',
   try {
     const { licenseKey, newExpireDate, newMaxUsers } = req.body;
     
+    console.log('🔧 续费请求参数:', { licenseKey, newExpireDate, newMaxUsers });
+    
     if (!licenseKey || !newExpireDate) {
       return res.status(400).json({ error: '缺少必要参数' });
     }
@@ -395,7 +397,11 @@ app.post('/api/renew-license',
       status: 'active'
     };
     
+    console.log('🔧 更新数据:', updateData);
+    
     const result = await updateLicense(licenseKey, updateData);
+    
+    console.log('🔧 更新结果:', result);
     
     if (!result) {
       return res.status(404).json({ error: '授权码不存在' });
