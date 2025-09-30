@@ -1,26 +1,31 @@
-// 传统服务器版本 - 适合VPS/ECS部署
+// 增强安全版授权服务器 - 集成认证系统
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const AuthHandler = require('./auth/auth-handler');
+const AuthMiddleware = require('./auth/auth-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 中间件
-app.use(express.json());
-app.use(express.static('public'));
+// 初始化认证系统
+const authHandler = new AuthHandler();
+const authMiddleware = new AuthMiddleware();
 
-// CORS中间件
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// 启动清理调度
+authMiddleware.startCleanupSchedule();
+
+// 基础中间件
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// 安全中间件
+app.use(authMiddleware.securityHeaders());
+app.use(authMiddleware.corsHandler());
+app.use(authMiddleware.requestLogger());
+
+// 静态文件服务（无需认证）
+app.use('/public', express.static('public'));
 
 // 数据存储文件路径
 const DATA_FILE = './data/licenses.json';
@@ -92,7 +97,55 @@ function generateLicenseKey() {
   return 'ADS-' + crypto.randomBytes(8).toString('hex').toUpperCase();
 }
 
-// API路由
+// ===== 认证相关路由（无需认证） =====
+
+// 登录接口
+app.post('/api/auth/login', authMiddleware.loginRateLimit(), async (req, res) => {
+  try {
+    const { username, password, totpCode } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        error: '用户名和密码不能为空',
+        code: 'MISSING_CREDENTIALS'
+      });
+    }
+
+    const result = await authHandler.authenticate(username, password, totpCode);
+
+    res.json({
+      success: true,
+      message: '登录成功',
+      token: result.token,
+      user: result.user
+    });
+
+  } catch (error) {
+    res.status(401).json({
+      error: error.message,
+      code: 'LOGIN_FAILED'
+    });
+  }
+});
+
+// 验证令牌接口
+app.get('/api/auth/verify', authMiddleware.authenticateToken(), (req, res) => {
+  res.json({
+    valid: true,
+    user: req.user
+  });
+});
+
+// 登出接口
+app.post('/api/auth/logout', authMiddleware.authenticateToken(), (req, res) => {
+  // 在实际应用中，可以在这里将token加入黑名单
+  res.json({
+    success: true,
+    message: '登出成功'
+  });
+});
+
+// ===== 授权管理相关路由（需要认证） =====
 
 // 初始化数据库
 app.post('/api/init-db', (req, res) => {
@@ -117,8 +170,11 @@ app.post('/api/init-db', (req, res) => {
   }
 });
 
-// 获取所有授权码
-app.get('/api/list-licenses', (req, res) => {
+// 获取所有授权码（需要读取权限）
+app.get('/api/list-licenses',
+  authMiddleware.authenticateToken(),
+  authMiddleware.requirePermission('read'),
+  (req, res) => {
   try {
     const licenses = readData().map(license => ({
       ...license,
@@ -136,8 +192,12 @@ app.get('/api/list-licenses', (req, res) => {
   }
 });
 
-// 添加新授权码
-app.post('/api/add-license', (req, res) => {
+// 添加新授权码（需要写入权限）
+app.post('/api/add-license',
+  authMiddleware.authenticateToken(),
+  authMiddleware.requirePermission('write'),
+  authMiddleware.apiRateLimit(),
+  (req, res) => {
   try {
     const { customerName, customerEmail, expireDays, maxUsers } = req.body;
     
@@ -193,8 +253,10 @@ app.post('/api/add-license', (req, res) => {
   }
 });
 
-// 验证授权码
-app.post('/api/validate-license', (req, res) => {
+// 验证授权码（公开接口，但有频率限制）
+app.post('/api/validate-license',
+  authMiddleware.rateLimit({ maxRequests: 200, windowMs: 60 * 1000 }),
+  (req, res) => {
   try {
     const { licenseKey } = req.body;
     
@@ -244,8 +306,11 @@ app.post('/api/validate-license', (req, res) => {
   }
 });
 
-// 续费授权码
-app.post('/api/renew-license', (req, res) => {
+// 续费授权码（需要写入权限）
+app.post('/api/renew-license',
+  authMiddleware.authenticateToken(),
+  authMiddleware.requirePermission('write'),
+  (req, res) => {
   try {
     const { licenseKey, newExpireDate, newMaxUsers } = req.body;
     
@@ -283,14 +348,150 @@ app.post('/api/renew-license', (req, res) => {
   }
 });
 
-// 主页路由
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// ===== 用户管理路由（需要管理员权限） =====
+
+// 修改密码
+app.post('/api/user/change-password',
+  authMiddleware.authenticateToken(),
+  async (req, res) => {
+    try {
+      const { oldPassword, newPassword } = req.body;
+
+      if (!oldPassword || !newPassword) {
+        return res.status(400).json({
+          error: '旧密码和新密码不能为空',
+          code: 'MISSING_PASSWORDS'
+        });
+      }
+
+      const result = await authHandler.changePassword(req.user.userId, oldPassword, newPassword);
+
+      res.json({
+        success: true,
+        message: result.message
+      });
+
+    } catch (error) {
+      res.status(400).json({
+        error: error.message,
+        code: 'PASSWORD_CHANGE_FAILED'
+      });
+    }
+  }
+);
+
+// 设置双因子认证
+app.post('/api/user/setup-2fa',
+  authMiddleware.authenticateToken(),
+  async (req, res) => {
+    try {
+      const result = await authHandler.setupTwoFactor(req.user.userId);
+
+      res.json({
+        success: true,
+        qrCodeUrl: result.qrCodeUrl,
+        secret: result.secret,
+        manualEntryKey: result.manualEntryKey
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        error: error.message,
+        code: 'SETUP_2FA_FAILED'
+      });
+    }
+  }
+);
+
+// 启用双因子认证
+app.post('/api/user/enable-2fa',
+  authMiddleware.authenticateToken(),
+  async (req, res) => {
+    try {
+      const { verificationCode } = req.body;
+
+      if (!verificationCode) {
+        return res.status(400).json({
+          error: '验证码不能为空',
+          code: 'MISSING_VERIFICATION_CODE'
+        });
+      }
+
+      const result = await authHandler.enableTwoFactor(req.user.userId, verificationCode);
+
+      res.json({
+        success: true,
+        message: result.message
+      });
+
+    } catch (error) {
+      res.status(400).json({
+        error: error.message,
+        code: 'ENABLE_2FA_FAILED'
+      });
+    }
+  }
+);
+
+// 获取认证日志（管理员权限）
+app.get('/api/admin/auth-logs',
+  authMiddleware.authenticateToken(),
+  authMiddleware.requireRole('admin'),
+  (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit) || 100;
+      const logs = authHandler.getAuthLogs(limit);
+
+      res.json({
+        success: true,
+        logs,
+        total: logs.length
+      });
+
+    } catch (error) {
+      res.status(500).json({
+        error: '获取日志失败',
+        code: 'GET_LOGS_FAILED'
+      });
+    }
+  }
+);
+
+// ===== 页面路由 =====
+
+// 登录页面
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// 友好管理界面
+// 主页路由（重定向到登录）
+app.get('/', (req, res) => {
+  res.redirect('/login');
+});
+
+// 管理界面（需要认证）
 app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+});
+
+// 旧版管理界面（向后兼容）
+app.get('/admin-old', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-friendly.html'));
+});
+
+// 健康检查接口
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: '2.0.0',
+    features: {
+      authentication: true,
+      twoFactor: true,
+      rateLimit: true,
+      auditLog: true
+    }
+  });
 });
 
 // 启动服务器

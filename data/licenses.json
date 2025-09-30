@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "license_key": "ADS-EXAMPLE123456789",
+    "customer_name": "示例客户",
+    "customer_email": "example@example.com",
+    "expire_date": "2026-09-27T10:23:35.149Z",
+    "max_users": 10,
+    "status": "active",
+    "features": {
+      "ads_management": true,
+      "user_management": true,
+      "reports": true,
+      "api_access": true
+    },
+    "created_at": "2025-09-27T10:23:35.149Z"
+  }
+]

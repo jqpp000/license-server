@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>授权管理系统 - 安全登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-message {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #feb2b2;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message {
+            background: #f0fff4;
+            color: #38a169;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #9ae6b4;
+            font-size: 14px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .two-factor-group {
+            display: none;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .security-info {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #4a5568;
+        }
+
+        .security-info h4 {
+            margin-bottom: 5px;
+            color: #2d3748;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🔐 授权管理系统</h1>
+            <p>安全登录 - Security Login</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名 / Username</label>
+                <input type="text" id="username" class="form-control" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码 / Password</label>
+                <input type="password" id="password" class="form-control" required autocomplete="current-password">
+            </div>
+
+            <div class="form-group two-factor-group" id="twoFactorGroup">
+                <label for="totpCode">双因子验证码 / 2FA Code</label>
+                <input type="text" id="totpCode" class="form-control" placeholder="请输入6位验证码">
+                <div class="help-text">请使用认证器应用获取验证码</div>
+            </div>
+
+            <div class="loading" id="loading"></div>
+
+            <button type="submit" class="btn-login" id="loginBtn">
+                🔑 安全登录
+            </button>
+        </form>
+
+        <div class="security-info">
+            <h4>🛡️ 安全提醒</h4>
+            <p>• 请使用管理员提供的账号信息登录</p>
+            <p>• 登录后请及时修改默认密码</p>
+            <p>• 如需启用双因子认证，请联系管理员</p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 广告管理系统. 版权所有.</p>
+        </div>
+    </div>
+
+    <script>
+        // 登录表单处理
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const totpCode = document.getElementById('totpCode').value;
+
+            const loginBtn = document.getElementById('loginBtn');
+            const loading = document.getElementById('loading');
+
+            // 显示加载状态
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+            hideMessages();
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        totpCode: totpCode || null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // 登录成功
+                    showMessage('success', '登录成功！正在跳转...');
+
+                    // 保存token
+                    localStorage.setItem('authToken', result.token);
+
+                    // 跳转到管理页面
+                    setTimeout(() => {
+                        window.location.href = '/admin';
+                    }, 1000);
+
+                } else {
+                    // 处理错误
+                    if (result.error === '需要双因子认证码') {
+                        document.getElementById('twoFactorGroup').style.display = 'block';
+                        showMessage('error', '请输入双因子验证码');
+                    } else {
+                        showMessage('error', result.error || '登录失败，请检查用户名和密码');
+                    }
+                }
+
+            } catch (error) {
+                showMessage('error', '网络错误，请稍后重试');
+                console.error('Login error:', error);
+            } finally {
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        function showMessage(type, message) {
+            hideMessages();
+            const messageElement = document.getElementById(type + 'Message');
+            messageElement.textContent = message;
+            messageElement.style.display = 'block';
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // 检查是否已登录
+        if (localStorage.getItem('authToken')) {
+            fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = '/admin';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

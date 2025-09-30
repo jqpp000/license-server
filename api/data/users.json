@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "passwordHash": "$2b$12$CDKNq3ysZhegucwkoycX5.4286BFVtD/j2/T6rCIoQ8uegxJvqNP2",
+    "role": "admin",
+    "active": true,
+    "twoFactorEnabled": false,
+    "totpSecret": null,
+    "permissions": [
+      "read",
+      "write",
+      "delete",
+      "manage_users",
+      "manage_licenses"
+    ],
+    "createdAt": "2025-09-27T10:18:15.758Z",
+    "lastLogin": "2025-09-30T13:24:42.363Z"
+  },
+  {
+    "id": 2,
+    "username": "operator",
+    "passwordHash": "$2b$12$lZ2BovbMpkGTYGWaaC0Neuf2TCGYiOb8xFzFhkPE5prnwR4h6/9WK",
+    "role": "operator",
+    "active": true,
+    "twoFactorEnabled": false,
+    "totpSecret": null,
+    "permissions": [
+      "read",
+      "write"
+    ],
+    "createdAt": "2025-09-27T10:18:15.925Z",
+    "lastLogin": null
+  }
+]

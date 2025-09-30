@@ -1,0 +1,63 @@
+-- 快速设置脚本 - 删除旧数据并重新创建
+-- 在 Supabase SQL Editor 中执行
+
+-- 删除旧表
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS licenses CASCADE;
+
+-- 创建 licenses 表
+CREATE TABLE licenses (
+  id SERIAL PRIMARY KEY,
+  license_key VARCHAR(50) UNIQUE NOT NULL,
+  customer_name VARCHAR(100) NOT NULL,
+  customer_email VARCHAR(100),
+  expire_date TIMESTAMP WITH TIME ZONE NOT NULL,
+  max_users INTEGER DEFAULT 10,
+  status VARCHAR(20) DEFAULT 'active',
+  features JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  renewed_at TIMESTAMP WITH TIME ZONE,
+  disabled_at TIMESTAMP WITH TIME ZONE
+);
+
+-- 创建 users 表
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(20) DEFAULT 'operator',
+  active BOOLEAN DEFAULT true,
+  two_factor_enabled BOOLEAN DEFAULT false,
+  totp_secret VARCHAR(255),
+  permissions TEXT[] DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_login TIMESTAMP WITH TIME ZONE
+);
+
+-- 创建索引
+CREATE INDEX idx_licenses_license_key ON licenses(license_key);
+CREATE INDEX idx_licenses_status ON licenses(status);
+CREATE INDEX idx_licenses_expire_date ON licenses(expire_date);
+
+-- 插入示例数据
+INSERT INTO licenses (license_key, customer_name, customer_email, expire_date, max_users, status, features) 
+VALUES (
+  'ADS-EXAMPLE123456789',
+  '示例客户',
+  'example@example.com',
+  '2026-12-31 23:59:59+00',
+  10,
+  'active',
+  '{"ads_management": true, "user_management": true, "reports": true, "api_access": true}'::jsonb
+);
+
+-- 插入默认用户
+INSERT INTO users (username, password_hash, role, permissions) 
+VALUES 
+  ('admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K', 'admin', ARRAY['read', 'write', 'delete', 'manage_users', 'manage_licenses']),
+  ('operator', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K', 'operator', ARRAY['read', 'write']);
+
+-- 验证数据
+SELECT 'Setup completed!' as status, 
+       (SELECT count(*) FROM licenses) as license_count,
+       (SELECT count(*) FROM users) as user_count;

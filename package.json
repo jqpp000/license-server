@@ -1,23 +1,38 @@
 {
   "name": "license-server",
-  "version": "1.0.0",
-  "description": "授权码管理服务器",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "增强安全版授权码管理服务器",
+  "main": "server.js",
   "type": "commonjs",
   "engines": {
-    "node": "22.x"
+    "node": ">=16.0.0"
   },
   "scripts": {
-    "dev": "vercel dev",
+    "start": "node server.js",
+    "dev": "node server.js",
     "build": "echo 'No build step required'",
-    "start": "node index.js"
+    "install-deps": "npm install --production"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "@vercel/kv": "^3.0.0",
+    "bcrypt": "^5.1.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "qrcode": "^1.5.4",
+    "speakeasy": "^2.0.0",
     "sqlite3": "^5.1.6"
   },
   "devDependencies": {
-    "vercel": "^28.0.0"
-  }
+    "vercel": "^28.20.0"
+  },
+  "keywords": [
+    "license",
+    "authentication",
+    "security",
+    "2fa",
+    "jwt"
+  ],
+  "author": "ADS System Developer",
+  "license": "MIT"
 }
