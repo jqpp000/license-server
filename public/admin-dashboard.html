@@ -395,6 +395,7 @@
         // 全局变量
         let authToken = localStorage.getItem('authToken');
         let currentUser = null;
+        let licenses = []; // 全局授权码列表
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -466,7 +467,8 @@
 
                 if (response.ok) {
                     const result = await response.json();
-                    displayLicenses(result.licenses);
+                    licenses = result.licenses; // 设置全局变量
+                    displayLicenses(licenses);
                     document.getElementById('licensesLoading').classList.add('hidden');
                     document.getElementById('licensesContent').classList.remove('hidden');
                 } else {
