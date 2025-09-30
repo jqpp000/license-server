@@ -134,7 +134,16 @@ async function updateLicense(licenseKey, updateData) {
 // 生成授权码
 function generateLicenseKey() {
   const crypto = require('crypto');
-  return 'ADS-' + crypto.randomBytes(8).toString('hex').toUpperCase();
+  // 生成更复杂的授权码：ADS- + 20位随机字符（数字+字母）
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = 'ADS-';
+  
+  // 生成20位随机字符
+  for (let i = 0; i < 20; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  return result;
 }
 
 // ===== 认证相关路由 =====
@@ -414,6 +423,50 @@ app.post('/api/renew-license',
     });
   } catch (error) {
     console.error('❌ 续费授权码失败:', error);
+    res.status(500).json({ error: '服务器内部错误' });
+  }
+});
+
+// 删除授权码
+app.delete('/api/delete-license',
+  authMiddleware.authenticateToken(),
+  authMiddleware.requirePermission('write'),
+  async (req, res) => {
+  try {
+    const { licenseKey } = req.body;
+    
+    console.log('🔧 删除请求参数:', { licenseKey });
+    
+    if (!licenseKey) {
+      return res.status(400).json({ error: '缺少授权码参数' });
+    }
+    
+    // 检查授权码是否存在
+    const existingLicense = await findLicenseByKey(licenseKey);
+    if (!existingLicense) {
+      return res.status(404).json({ error: '授权码不存在' });
+    }
+    
+    // 删除授权码
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .delete()
+      .eq('license_key', licenseKey);
+    
+    if (error) {
+      console.error('❌ 删除授权码失败:', error);
+      return res.status(500).json({ error: '删除失败' });
+    }
+    
+    console.log('✅ 授权码删除成功:', licenseKey);
+    
+    res.json({
+      success: true,
+      message: '授权码删除成功',
+      licenseKey: licenseKey
+    });
+  } catch (error) {
+    console.error('❌ 删除授权码失败:', error);
     res.status(500).json({ error: '服务器内部错误' });
   }
 });

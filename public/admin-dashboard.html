@@ -499,7 +499,8 @@
                     </td>
                     <td>
                         <button onclick="viewLicense('${license.license_key}')" style="background: #4299e1; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">查看</button>
-                        <button onclick="renewLicense('${license.license_key}')" style="background: #48bb78; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;">续费</button>
+                        <button onclick="renewLicense('${license.license_key}')" style="background: #48bb78; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">续费</button>
+                        <button onclick="deleteLicense('${license.license_key}')" style="background: #f56565; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;">删除</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -618,6 +619,36 @@
         // 查看授权码详情
         function viewLicense(licenseKey) {
             alert(`授权码详情: ${licenseKey}\n\n这里将显示详细信息...`);
+        }
+
+        // 删除授权码
+        async function deleteLicense(licenseKey) {
+            // 确认删除
+            if (!confirm(`确认删除授权码 ${licenseKey}？\n\n此操作不可撤销！`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/delete-license`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ licenseKey })
+                });
+
+                if (response.ok) {
+                    showSuccess(`✅ 授权码删除成功！\n授权码: ${licenseKey}`);
+                    // 刷新数据
+                    await loadDashboardData();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || '删除失败');
+                }
+            } catch (error) {
+                showError('❌ 删除授权码失败: ' + error.message);
+            }
         }
 
         // 续费授权码
