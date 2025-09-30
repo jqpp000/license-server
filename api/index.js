@@ -448,16 +448,31 @@ app.get('/health', (req, res) => {
 app.get('/api/test-db', async (req, res) => {
   try {
     console.log('🔧 测试 Supabase 连接...');
-    const { data, error } = await supabase
+    console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+    console.log('SUPABASE_ANON_KEY 长度:', process.env.SUPABASE_ANON_KEY ? process.env.SUPABASE_ANON_KEY.length : '未设置');
+    
+    // 先测试基本连接
+    const { data: testData, error: testError } = await supabase
       .from('licenses')
-      .select('count')
+      .select('*')
       .limit(1);
     
-    if (error) {
-      console.error('❌ Supabase 连接失败:', error);
+    if (testError) {
+      console.error('❌ Supabase 查询失败:', testError);
+      
+      // 检查是否是表不存在的问题
+      if (testError.code === 'PGRST116' || testError.message.includes('relation "licenses" does not exist')) {
+        return res.status(500).json({ 
+          error: '数据库表不存在', 
+          details: 'licenses 表未创建，请先在 Supabase 中创建表',
+          suggestion: '请访问 Supabase 控制台创建 licenses 表'
+        });
+      }
+      
       return res.status(500).json({ 
         error: '数据库连接失败', 
-        details: error.message 
+        details: testError.message,
+        code: testError.code
       });
     }
     
@@ -465,7 +480,8 @@ app.get('/api/test-db', async (req, res) => {
     res.json({ 
       success: true, 
       message: '数据库连接正常',
-      data: data 
+      data: testData,
+      count: testData ? testData.length : 0
     });
   } catch (error) {
     console.error('❌ 测试数据库连接失败:', error);
