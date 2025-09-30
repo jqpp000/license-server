@@ -8,6 +8,11 @@ const AuthMiddleware = require('./auth/auth-middleware');
 // Supabase配置
 const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key';
+
+console.log('🔧 Supabase配置检查:');
+console.log('SUPABASE_URL:', supabaseUrl);
+console.log('SUPABASE_ANON_KEY:', supabaseKey ? '已设置' : '未设置');
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
@@ -273,9 +278,11 @@ app.post('/api/add-license',
   authMiddleware.apiRateLimit(),
   async (req, res) => {
   try {
+    console.log('🔧 添加授权码请求:', req.body);
     const { customerName, customerEmail, expireDays, maxUsers } = req.body;
     
     if (!customerName) {
+      console.log('❌ 缺少客户名称');
       return res.status(400).json({ error: '缺少客户名称' });
     }
     
@@ -435,6 +442,38 @@ app.get('/health', (req, res) => {
       auditLog: true
     }
   });
+});
+
+// 测试 Supabase 连接
+app.get('/api/test-db', async (req, res) => {
+  try {
+    console.log('🔧 测试 Supabase 连接...');
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      console.error('❌ Supabase 连接失败:', error);
+      return res.status(500).json({ 
+        error: '数据库连接失败', 
+        details: error.message 
+      });
+    }
+    
+    console.log('✅ Supabase 连接成功');
+    res.json({ 
+      success: true, 
+      message: '数据库连接正常',
+      data: data 
+    });
+  } catch (error) {
+    console.error('❌ 测试数据库连接失败:', error);
+    res.status(500).json({ 
+      error: '数据库连接测试失败', 
+      details: error.message 
+    });
+  }
 });
 
 // 导出Express应用
