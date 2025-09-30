@@ -619,10 +619,39 @@
         }
 
         // 续费授权码
-        function renewLicense(licenseKey) {
+        async function renewLicense(licenseKey) {
             const days = prompt('请输入续费天数:', '365');
             if (days && !isNaN(days)) {
-                alert(`续费功能开发中...\n授权码: ${licenseKey}\n续费天数: ${days}`);
+                const additionalDays = parseInt(days);
+
+                // 计算新的过期时间
+                const newExpireDate = new Date();
+                newExpireDate.setDate(newExpireDate.getDate() + additionalDays);
+
+                try {
+                    const response = await fetch('/api/renew-license', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            licenseKey: licenseKey,
+                            newExpireDate: newExpireDate.toISOString()
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        showSuccess(`授权码续费成功！\n授权码: ${licenseKey}\n新过期时间: ${newExpireDate.toLocaleDateString()}`);
+                        await loadDashboardData();
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.error || '续费失败');
+                    }
+                } catch (error) {
+                    showError('续费授权码失败: ' + error.message);
+                }
             }
         }
 

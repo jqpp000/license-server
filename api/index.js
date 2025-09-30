@@ -460,6 +460,17 @@ app.get('/api/test-db', async (req, res) => {
     if (testError) {
       console.error('❌ Supabase 查询失败:', testError);
       
+      // 检查是否是 RLS 问题
+      if (testError.message.includes('RLS') || testError.message.includes('row level security')) {
+        return res.status(500).json({ 
+          error: 'RLS 权限问题', 
+          details: '需要启用 Row Level Security 或创建访问策略',
+          suggestion: '请在 Supabase 控制台中启用 RLS 并创建策略',
+          error_code: testError.code,
+          full_error: testError.message
+        });
+      }
+      
       // 检查是否是表不存在的问题
       if (testError.code === 'PGRST116' || testError.message.includes('relation "licenses" does not exist')) {
         return res.status(500).json({ 
