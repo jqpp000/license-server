@@ -334,31 +334,53 @@
         }
 
         .copy-btn {
-            width: 32px;
-            height: 32px;
-            background: var(--gray-100);
-            border: 1px solid var(--gray-300);
-            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--gray-600);
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
             flex-shrink: 0;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .copy-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
         }
 
         .copy-btn:hover {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow);
+            background: linear-gradient(135deg, var(--primary-dark), #1d4ed8);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .copy-btn:hover::before {
+            left: 100%;
         }
 
         .copy-btn:active {
-            transform: translateY(0);
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        .copy-btn i {
+            position: relative;
+            z-index: 1;
         }
 
         .status-badge {
@@ -935,8 +957,8 @@
                     <td>
                         <div class="license-key-container">
                             <div class="license-key">${license.license_key}</div>
-                            <button class="copy-btn" onclick="copyLicenseKey('${license.license_key}')" title="复制授权码">
-                                <i class="fas fa-copy"></i>
+                            <button class="copy-btn" onclick="copyLicenseKey('${license.license_key}')" title="点击复制授权码">
+                                <i class="fas fa-clone"></i>
                             </button>
                         </div>
                     </td>
@@ -1003,7 +1025,7 @@
         async function copyLicenseKey(licenseKey) {
             try {
                 await navigator.clipboard.writeText(licenseKey);
-                showSuccess(`✅ 授权码已复制到剪贴板！\n${licenseKey}`);
+                showSuccess(`📋 授权码已复制！\n\n${licenseKey}\n\n已保存到剪贴板，可以直接粘贴使用`);
             } catch (error) {
                 // 如果 clipboard API 不可用，使用传统方法
                 const textArea = document.createElement('textarea');
@@ -1012,7 +1034,7 @@
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                showSuccess(`✅ 授权码已复制到剪贴板！\n${licenseKey}`);
+                showSuccess(`📋 授权码已复制！\n\n${licenseKey}\n\n已保存到剪贴板，可以直接粘贴使用`);
             }
         }
 
