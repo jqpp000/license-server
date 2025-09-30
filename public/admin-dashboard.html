@@ -315,6 +315,12 @@
             background: var(--gray-50);
         }
 
+        .license-key-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .license-key {
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 0.875rem;
@@ -324,6 +330,35 @@
             padding: 0.5rem 0.75rem;
             border-radius: 6px;
             border: 1px solid var(--gray-200);
+            flex: 1;
+        }
+
+        .copy-btn {
+            width: 32px;
+            height: 32px;
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
         }
 
         .status-badge {
@@ -898,7 +933,12 @@
 
                 row.innerHTML = `
                     <td>
-                        <div class="license-key">${license.license_key}</div>
+                        <div class="license-key-container">
+                            <div class="license-key">${license.license_key}</div>
+                            <button class="copy-btn" onclick="copyLicenseKey('${license.license_key}')" title="复制授权码">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
                     </td>
                     <td style="font-weight: 500;">${license.customer_name}</td>
                     <td style="font-weight: 500;">${new Date(license.expire_date).toLocaleDateString('zh-CN')}</td>
@@ -956,6 +996,23 @@
                 }
             } catch (error) {
                 console.error('加载统计数据失败:', error);
+            }
+        }
+
+        // 复制授权码
+        async function copyLicenseKey(licenseKey) {
+            try {
+                await navigator.clipboard.writeText(licenseKey);
+                showSuccess(`✅ 授权码已复制到剪贴板！\n${licenseKey}`);
+            } catch (error) {
+                // 如果 clipboard API 不可用，使用传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = licenseKey;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showSuccess(`✅ 授权码已复制到剪贴板！\n${licenseKey}`);
             }
         }
 
