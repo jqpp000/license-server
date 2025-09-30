@@ -334,7 +334,7 @@
         }
 
         .copy-btn {
-            width: 36px;
+            min-width: 60px;
             height: 36px;
             background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             border: none;
@@ -344,13 +344,15 @@
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 600;
             transition: all 0.3s ease;
             flex-shrink: 0;
             box-shadow: var(--shadow);
             position: relative;
             overflow: hidden;
+            gap: 0.5rem;
+            padding: 0 0.75rem;
         }
 
         .copy-btn::before {
@@ -959,6 +961,7 @@
                             <div class="license-key">${license.license_key}</div>
                             <button class="copy-btn" onclick="copyLicenseKey('${license.license_key}')" title="点击复制授权码">
                                 <i class="fas fa-clone"></i>
+                                <span>复制</span>
                             </button>
                         </div>
                     </td>
