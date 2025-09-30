@@ -26,7 +26,7 @@ app.use(authMiddleware.corsHandler());
 app.use(authMiddleware.requestLogger());
 
 // 静态文件服务
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 
 // Supabase数据操作函数
 const TABLE_NAME = 'licenses';
@@ -409,7 +409,7 @@ app.post('/api/renew-license',
 
 // 登录页面
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
 
 // 主页路由（重定向到登录）
@@ -419,7 +419,7 @@ app.get('/', (req, res) => {
 
 // 管理界面
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin-dashboard.html'));
 });
 
 // 健康检查接口
